@@ -238,7 +238,7 @@ if [ "$A_NAME" = "powerpc64" ]; then
 fi
 
 # arm
-if [ "$A_NAME" = "arm" -o "$A_NAME" = "armv6l" ]; then
+if [ "$A_NAME" = "arm" -o "$A_NAME" = "armv6l" -o "$A_NAME" = "armv7l" ]; then
 	SUB_ARCH_NAME=arm
 fi
 
