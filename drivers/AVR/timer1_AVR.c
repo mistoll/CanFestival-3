@@ -21,15 +21,20 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-// AVR implementation of the  CANopen timer driver, uses Timer 3 (16 bit)
+// AVR implementation of the  CANopen timer driver, uses Timer 1 (16 bit)
+
+#if F_CPU != 8000000
+#error This file assumes a clock speed of 8MHz
+#endif
+
 
 // Includes for the Canfestival driver
 #include "canfestival.h"
 #include "timer.h"
 
 // Define the timer registers
-#define TimerAlarm        OCR3B
-#define TimerCounter      TCNT3
+#define TimerAlarm        OCR1B
+#define TimerCounter      TCNT1
 
 /************************** Modul variables **********************************/
 // Store the last timer value to calculate the elapsed time
@@ -43,9 +48,9 @@ OUTPUT	void
 ******************************************************************************/
 {
   TimerAlarm = 0;		// Set it back to the zero
-	// Set timer 3 for CANopen operation tick 8us max, time is 524ms
-  TCCR3B = 1 << CS31 | 1 << CS30;       // Timer 3 normal, mit CK/64
-  TIMSK3 = 1 << OCIE3B;                 // Enable the interrupt
+	// Set timer 1 for CANopen operation tick 8us max, time is 524ms
+  TCCR1B = 1 << CS11 | 1 << CS10;       // Timer 1 normal, mit CK/64
+  TIMSK1 = 1 << OCIE1B;                 // Enable the interrupt
 }
 
 void setTimer(TIMEVAL value)
@@ -77,12 +82,12 @@ OUTPUT	value TIMEVAL (unsigned long) the elapsed time
 #ifdef  __IAR_SYSTEMS_ICC__
 #pragma type_attribute = __interrupt
 #pragma vector=TIMER3_COMPB_vect
-void TIMER3_COMPB_interrupt(void)
+void TIMER1_COMPB_interrupt(void)
 #else	// GCC
-ISR(TIMER3_COMPB_vect)
+ISR(TIMER1_COMPB_vect)
 #endif	// GCC
 /******************************************************************************
-Interruptserviceroutine Timer 3 Compare B for the CAN timer
+Interruptserviceroutine Timer 1 Compare B for the CAN timer
 ******************************************************************************/
 {
   last_time_set = TimerCounter;
