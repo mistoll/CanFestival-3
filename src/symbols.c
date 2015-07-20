@@ -65,12 +65,11 @@ EXPORT_SYMBOL (sendPDOrequest);
 EXPORT_SYMBOL (proceedPDO);
 EXPORT_SYMBOL (sendPDOevent);
 EXPORT_SYMBOL (sendOnePDOevent);
-EXPORT_SYMBOL (_sendPDOevent);
+EXPORT_SYMBOL (_sendSyncPDOevent);
 EXPORT_SYMBOL (PDOInit);
 EXPORT_SYMBOL (PDOStop);
 EXPORT_SYMBOL (PDOEventTimerAlarm);
 EXPORT_SYMBOL (PDOInhibitTimerAlarm);
-EXPORT_SYMBOL (CopyBits);
 
 // sdo.h
 EXPORT_SYMBOL (SDOTimeoutAlarm);

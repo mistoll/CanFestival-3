@@ -33,6 +33,7 @@
 */
 
 #include <data.h>
+#include "objacces.h"
 #include "lifegrd.h"
 #include "canfestival.h"
 #include "dcf.h"

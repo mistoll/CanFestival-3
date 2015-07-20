@@ -69,17 +69,6 @@ struct struct_s_PDO_status {
 #define TRANS_EVENT_PROFILE   255  /* Transmission on event */
 
 /** 
- * @brief Copy all the data to transmit in process_var
- * Prepare the PDO defined at index to be sent
- * *pwCobId : returns the value of the cobid. (subindex 1)
- * @param *d Pointer on a CAN object data structure
- * @param numPdo The PDO number
- * @param *pdo Pointer on a CAN message structure
- * @return 0 or 0xFF if error.
- */
-UNS8 buildPDO(CO_Data* d, UNS8 numPdo, Message *pdo);
-
-/** 
  * @ingroup pdo
  * @brief Transmit a PDO request frame on the network to the slave.
  * @param *d Pointer on a CAN object data structure
@@ -109,17 +98,15 @@ UNS8 proceedPDO (CO_Data* d, Message *m);
  * type and content change before sending it.    
  * @param *d Pointer on a CAN object data structure
  */
-UNS8 sendPDOevent (CO_Data* d);
+UNS8 sendAsyncPDOevent(CO_Data* d);
 UNS8 sendOnePDOevent (CO_Data* d, UNS8 pdoNum);
-
 /** 
  * @ingroup pdo
  * @brief Function iterates on all TPDO and look TPDO transmit 
  * type and content change before sending it.
  * @param *d Pointer on a CAN object data structure
- * @param isSyncEvent
  */
-UNS8 _sendPDOevent(CO_Data* d, UNS8 isSyncEvent);
+UNS8 _sendSyncPDOevent(CO_Data* d);
 
 /** 
  * @brief Initialize PDO feature 
@@ -149,6 +136,4 @@ void PDOEventTimerAlarm(CO_Data* d, UNS32 pdoNum);
  */
 void PDOInhibitTimerAlarm(CO_Data* d, UNS32 pdoNum);
 
-/* copy bit per bit in little endian */
-void CopyBits(UNS8 NbBits, UNS8* SrcByteIndex, UNS8 SrcBitIndex, UNS8 SrcBigEndian, UNS8* DestByteIndex, UNS8 DestBitIndex, UNS8 DestBigEndian);
 #endif

@@ -36,7 +36,7 @@ typedef struct struct_CO_Data CO_Data;
 #include "def.h"
 #include "can.h"
 #include "objdictdef.h"
-#include "objacces.h"
+//#include "objacces.h"
 #include "sdo.h"
 #include "pdo.h"
 #include "states.h"
@@ -48,6 +48,11 @@ typedef struct struct_CO_Data CO_Data;
 #ifdef CO_ENABLE_LSS
 #include "lss.h"
 #endif
+
+
+typedef UNS32 (*valueRangeTest_t)(UNS8 typeValue, void *Value);
+typedef void (* storeODSubIndex_t)(CO_Data* d, UNS16 wIndex, UNS8 bSubindex);
+void _storeODSubIndex (CO_Data* d, UNS16 wIndex, UNS8 bSubindex);
 
 /**
  * @ingroup od

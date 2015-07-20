@@ -40,16 +40,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define __objacces_h__
 
 #include <applicfg.h>
-
+#include "data.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-typedef UNS32 (*valueRangeTest_t)(UNS8 typeValue, void *Value);
-typedef void (* storeODSubIndex_t)(CO_Data* d, UNS16 wIndex, UNS8 bSubindex);
-void _storeODSubIndex (CO_Data* d, UNS16 wIndex, UNS8 bSubindex);
 
 /**
  * @brief Print MSG_WAR (s) if error to the access to the object dictionary occurs.
@@ -68,8 +64,45 @@ void _storeODSubIndex (CO_Data* d, UNS16 wIndex, UNS8 bSubindex);
  * @param code error code to print. (SDO abort code. See file def.h)
  * @return
  */ 
-UNS8 accessDictionaryError(UNS16 index, UNS8 subIndex, 
-			   UNS32 sizeDataDict, UNS32 sizeDataGiven, UNS32 code);
+
+//We need the function implementation for linking
+//Only a placeholder with a define isnt enough!
+static inline UNS8 accessDictionaryError(UNS16 index, UNS8 subIndex,
+	UNS32 sizeDataDict, UNS32 sizeDataGiven, UNS32 code)
+{
+	#ifdef DEBUG_WAR_CONSOLE_ON
+	MSG_WAR(0x2B09,"Dictionary index : ", index);
+	MSG_WAR(0X2B10,"           subindex : ", subIndex);
+	switch (code) {
+		case  OD_NO_SUCH_OBJECT:
+		MSG_WAR(0x2B11,"Index not found ", index);
+		break;
+		case OD_NO_SUCH_SUBINDEX :
+		MSG_WAR(0x2B12,"SubIndex not found ", subIndex);
+		break;
+		case OD_WRITE_NOT_ALLOWED :
+		MSG_WAR(0x2B13,"Write not allowed, data is read only ", index);
+		break;
+		case OD_LENGTH_DATA_INVALID :
+		MSG_WAR(0x2B14,"Conflict size data. Should be (bytes)  : ", sizeDataDict);
+		MSG_WAR(0x2B15,"But you have given the size  : ", sizeDataGiven);
+		break;
+		case OD_NOT_MAPPABLE :
+		MSG_WAR(0x2B16,"Not mappable data in a PDO at index    : ", index);
+		break;
+		case OD_VALUE_TOO_LOW :
+		MSG_WAR(0x2B17,"Value range error : value too low. SDOabort : ", code);
+		break;
+		case OD_VALUE_TOO_HIGH :
+		MSG_WAR(0x2B18,"Value range error : value too high. SDOabort : ", code);
+		break;
+		default :
+		MSG_WAR(0x2B20, "Unknown error code : ", code);
+	}
+	#endif
+
+	return 0;
+}
 
 
 /* _getODentry() Reads an entry from the object dictionary.\n
@@ -111,15 +144,103 @@ UNS8 accessDictionaryError(UNS16 index, UNS8 subIndex,
  * - OD_SUCCESSFUL is returned upon success. 
  * - SDO abort code is returned if error occurs . (See file def.h)
  */
-UNS32 _getODentry( CO_Data* d,
-                   UNS16 wIndex,
-                   UNS8 bSubindex,
-                   void * pDestData,
-                   UNS32 * pExpectedSize,
-                   UNS8 * pDataType,
-                   UNS8 checkAccess,
-                   UNS8 endianize);
 
+static inline UNS32 _findODentry( CO_Data* d,
+	UNS16 wIndex,
+	UNS8 bSubindex,
+	const subindex** result)
+{ /* DO NOT USE MSG_ERR because the macro may send a PDO -> infinite
+loop if it fails. */
+	UNS32 errorCode;
+	const indextable *ptrTable;
+	ODCallback_t *Callback;
+	
+	ptrTable = (*d->scanIndexOD)(wIndex, &errorCode, &Callback);
+
+	if (errorCode != OD_SUCCESSFUL)
+		return errorCode;
+		
+	if( ptrTable->bSubCount <= bSubindex ) {
+		/* Subindex not found */
+		accessDictionaryError(wIndex, bSubindex, 0, 0, OD_NO_SUCH_SUBINDEX);
+		return OD_NO_SUCH_SUBINDEX;
+	}
+	*result = &ptrTable->pSubindex[bSubindex];
+	return OD_SUCCESSFUL;
+}
+
+static inline uint8_t _checkODentryAccess(const CO_Data* d,
+	const subindex *ptrTable, UNS16 wIndex, UNS8 bSubindex) {
+	if (ptrTable->bAccessType & WO) {
+		MSG_WAR(0x2B30, "Access Type : ", ptrTable->pSubindex[bSubindex].bAccessType);
+		accessDictionaryError(wIndex, bSubindex, 0, 0, OD_READ_NOT_ALLOWED);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline UNS32 _copyODentry( CO_Data* d,
+	const subindex *ptrTable,
+	UNS8 bSubindex,
+	void * pDestData,
+	UNS8 dataType,
+	UNS32 * pExpectedSize,
+	UNS8 endianize)
+{
+	UNS32 szData;
+	if (ptrTable->size > *pExpectedSize) {
+		/* Requested variable is too large to fit into a transfer line, inform    *
+			* the caller about the real size of the requested variable.              */
+		*pExpectedSize = ptrTable->size;
+		return SDOABT_OUT_OF_MEMORY;
+	}
+
+	szData = ptrTable->size;
+	
+#  ifdef CANOPEN_BIG_ENDIAN
+	if(endianize && dataType > boolean && !(
+		dataType >= visible_string &&
+		dataType <= domain)) {
+		/* data must be transmited with low byte first */
+		UNS8 i, j = 0;
+		MSG_WAR(boolean, "data type ", dataType);
+		MSG_WAR(visible_string, "data type ", dataType);
+		for ( i = szData ; i > 0 ; i--) {
+			MSG_WAR(i," ", j);
+			((UNS8*)pDestData)[j++] =
+			((UNS8*)ptrTable->pObject)[i-1];
+		}
+		*pExpectedSize = szData;
+	}
+	else /* no endianisation change */
+#  endif
+
+	if(dataType != visible_string) {
+		memcpy(pDestData, ptrTable->pObject,szData);
+		*pExpectedSize = szData;
+	}else{
+		/* TODO : CONFORM TO DS-301 :
+		*  - stop using NULL terminated strings
+		*  - store string size in td_subindex
+		* */
+		/* Copy null terminated string to user, and return discovered size */
+		UNS8 *ptr = (UNS8*)ptrTable->pObject;
+		UNS8 *ptr_start = ptr;
+		/* *pExpectedSize IS < szData . if null, use szData */
+		UNS8 *ptr_end = ptr + (*pExpectedSize ? *pExpectedSize : szData) ;
+		UNS8 *ptr_dest = (UNS8*)pDestData;
+		while( *ptr && ptr < ptr_end){
+			*(ptr_dest++) = *(ptr++);
+		}
+
+		*pExpectedSize = (UNS32) (ptr - ptr_start);
+		/* terminate string if not maximum length */
+		if (*pExpectedSize < szData)
+		*(ptr) = 0;
+	}
+
+	return OD_SUCCESSFUL;
+}
 /** 
  * @ingroup od
  * @brief getODentry() to read from object and endianize
@@ -141,11 +262,21 @@ UNS32 _getODentry( CO_Data* d,
  * - OD_SUCCESSFUL is returned upon success. 
  * - SDO abort code is returned if error occurs . (See file def.h)
  */
-#define getODentry( OD, wIndex, bSubindex, pDestData, pExpectedSize, \
-		          pDataType,  checkAccess)                         \
-       _getODentry( OD, wIndex, bSubindex, pDestData, pExpectedSize, \
-		          pDataType,  checkAccess, 1)            
-
+static inline UNS32 getODentry(CO_Data* OD, UNS16 wIndex, UNS8 bSubindex, void* pDestData, UNS32* pExpectedSize,
+		          UNS8* pDataType,  UNS8 checkAccess) {
+	UNS32 err;
+	const subindex* ptrTable = NULL;
+	err = _findODentry(OD,wIndex, bSubindex, &ptrTable);
+	if (err != OD_SUCCESSFUL)
+		return err;
+	if (checkAccess)
+		if (!_checkODentryAccess(OD, ptrTable, wIndex, bSubindex))
+			return OD_READ_NOT_ALLOWED;
+	
+	*pDataType = ptrTable->bDataType;
+	err = _copyODentry(OD,ptrTable, bSubindex, pDestData, *pDataType, pExpectedSize, TRUE);
+	return err;
+}
 /** 
  * @ingroup od
  * @brief readLocalDict() reads an entry from the object dictionary, but in 

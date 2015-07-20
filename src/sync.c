@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 */
 
-#include "data.h"
+#include "objacces.h"
 #include "sync.h"
 #include "canfestival.h"
 #include "sysdep.h"
@@ -176,7 +176,7 @@ UNS8 proceedSYNC(CO_Data* d)
   if(! d->CurrentCommunicationState.csPDO) 
     return 0;
 
-  res = _sendPDOevent(d, 1 /*isSyncEvent*/ );
+  res = _sendSyncPDOevent(d);
   
   /*Call user app callback*/
   (*d->post_TPDO)(d);

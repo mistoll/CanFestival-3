@@ -34,6 +34,7 @@
 */
 
 #include <data.h>
+#include <objacces.h>
 #include "emcy.h"
 #include "canfestival.h"
 #include "sysdep.h"

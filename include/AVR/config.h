@@ -40,11 +40,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#define WD_SLEEP
 // Needed defines by Atmel lib
-#define FOSC           8000        // 8 MHz External cristal
-#ifndef F_CPU
-#define F_CPU          (1000UL*FOSC) // Need for AVR GCC
-#endif
-#define CAN_BAUDRATE    125
+// #define FOSC           8000        // 8 MHz External cristal
+// #ifndef F_CPU
+// #define F_CPU          (1000UL*FOSC) // Need for AVR GCC
+// #endif
+// #define CAN_BAUDRATE    125
 
 // Needed defines by Canfestival lib
 #define MAX_CAN_BUS_ID 1

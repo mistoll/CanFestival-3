@@ -65,7 +65,6 @@ EXPORTS
         PDOStop
         PDOEventTimerAlarm
         PDOInhibitTimerAlarm
-        CopyBits
         _RxPDO_EventTimers_Handler
 
         ; sdo.h

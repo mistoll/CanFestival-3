@@ -33,7 +33,7 @@
 /* #define DEBUG_ERR_CONSOLE_ON */
 
 #include <stdlib.h>
-
+#include <objacces.h>
 #include "canfestival.h"
 #include "sysdep.h"
 
